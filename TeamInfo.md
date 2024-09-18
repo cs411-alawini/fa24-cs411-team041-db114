@@ -25,4 +25,6 @@
 
 ## Project Summary
 
-This is a summary of the project!
+  In this project, we will develop an application that helps job seekers in an increasingly competitive job market. The application will provide comprehensive job opening information by aggregating and analyzing data from various sources. This information will offer users insights into the latest hiring trends, demand for specific roles, and compensation for different positions across industries. Also, the users can upload their personal job information to the website to help future job seekers.
+  By offering an interface that incorporates job openings, salaries, and recommendations, this tool will help job seekers make informed career decisions, focus their job search on high-opportunity areas, and enhance their chances of success in the hiring process.
+
