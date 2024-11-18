@@ -9,12 +9,12 @@ This guide will help you set up both the frontend and backend components of the 
    cd backend
    ```
 
-2. Create a virtual environment:
+2. Create a virtual environment (optional):
    ```bash
    python -m venv .venv
    ```
 
-3. Activate the virtual environment:
+3. Activate the virtual environment (optional):
    - Windows:
      ```bash
      .venv\Scripts\activate
