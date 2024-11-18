@@ -1,0 +1,10 @@
+# Node modules
+code/frontend/node_modules/
+
+# Python virtual environment
+code/backend/venv/
+code/backend/__pycache__/
+.venv/
+
+# VS Code settings
+.vscode/ 
