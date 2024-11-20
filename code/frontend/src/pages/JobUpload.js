@@ -3,12 +3,12 @@ import api from '../services/api';
 
 const JobUpload = () => {
   // 定义表单字段的状态
-  const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [jobSnippet, setJobSnippet] = useState('');
-  const [jobLink, setJobLink] = useState('');
-  const [sponsored, setSponsored] = useState(false);
-  const [salary, setSalary] = useState('');
+  const [JobTitle, setJobTitle] = useState('');
+  const [CompanyName, setCompanyName] = useState('');
+  const [JobSnippet, setJobSnippet] = useState('');
+  const [JobLink, setJobLink] = useState('');
+  const [Sponsored, setSponsored] = useState(false);
+  const [Salary, setSalary] = useState('');
   const [message, setMessage] = useState(''); // 用于显示消息
 
   // 处理表单提交
@@ -17,12 +17,12 @@ const JobUpload = () => {
 
     // 构造 job 数据
     const job = {
-      jobTitle,
-      companyName,
-      jobSnippet,
-      jobLink,
-      sponsored,
-      salary: parseInt(salary, 10),
+      JobTitle,
+      CompanyName,
+      JobSnippet,
+      JobLink,
+      Sponsored,
+      Salary: parseInt(Salary, 10),
     };
 
     try {
@@ -56,8 +56,8 @@ const JobUpload = () => {
           <label htmlFor="jobTitle">Job Title:</label>
           <input
             type="text"
-            id="jobTitle"
-            value={jobTitle}
+            id="JobTitle"
+            value={JobTitle}
             onChange={(e) => setJobTitle(e.target.value)}
             required
           />
@@ -67,8 +67,8 @@ const JobUpload = () => {
           <label htmlFor="companyName">Company Name:</label>
           <input
             type="text"
-            id="companyName"
-            value={companyName}
+            id="CompanyName"
+            value={CompanyName}
             onChange={(e) => setCompanyName(e.target.value)}
             required
           />
@@ -77,8 +77,8 @@ const JobUpload = () => {
         <div>
           <label htmlFor="jobSnippet">Job Snippet:</label>
           <textarea
-            id="jobSnippet"
-            value={jobSnippet}
+            id="JobSnippet"
+            value={JobSnippet}
             onChange={(e) => setJobSnippet(e.target.value)}
             required
           />
@@ -88,8 +88,8 @@ const JobUpload = () => {
           <label htmlFor="jobLink">Job Link:</label>
           <input
             type="text"
-            id="jobLink"
-            value={jobLink}
+            id="JobLink"
+            value={JobLink}
             onChange={(e) => setJobLink(e.target.value)}
             required
           />
@@ -99,8 +99,8 @@ const JobUpload = () => {
           <label htmlFor="sponsored">Sponsored:</label>
           <input
             type="checkbox"
-            id="sponsored"
-            checked={sponsored}
+            id="Sponsored"
+            checked={Sponsored}
             onChange={(e) => setSponsored(e.target.checked)}
           />
         </div>
@@ -109,8 +109,8 @@ const JobUpload = () => {
           <label htmlFor="salary">Salary:</label>
           <input
             type="number"
-            id="salary"
-            value={salary}
+            id="Salary"
+            value={Salary}
             onChange={(e) => setSalary(e.target.value)}
             required
           />

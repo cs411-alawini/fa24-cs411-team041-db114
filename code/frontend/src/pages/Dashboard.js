@@ -140,8 +140,6 @@ function Dashboard() {
               <tr>
                 <th>Job Title</th>
                 <th>Company Name</th>
-                <th>Job Snippet</th>
-                <th>Job Link</th>
                 <th>Sponsored</th>
                 <th>Salary</th>
                 <th>Rating</th>
@@ -153,8 +151,6 @@ function Dashboard() {
                 <tr key={job.id}>
                   <td>{job.JobTitle}</td>
                   <td>{job.CompanyName}</td>
-                  <td>{job.JobSnippet}</td>
-                  <td>{job.JobLink}</td>
                   <td>{job.Sponsored ? 'Yes' : 'No'}</td>
                   <td>{job.Salary}</td>
                   <td>{job.Rating}</td>
@@ -164,7 +160,7 @@ function Dashboard() {
                       color="primary"
                       onClick={() => {
                         setJobToUpdate(job);
-                        setNewJobData({ jobTitle: job.jobTitle, companyName: job.companyName, sponsored: job.sponsored });
+                        setNewJobData({ jobTitle: job.jobTitle, companyName: job.CompanyName, sponsored: job.Sponsored });
                         setOpenDialog(true);
                       }}
                     >
@@ -173,7 +169,7 @@ function Dashboard() {
                     <Button
                       variant="outlined"
                       color="secondary"
-                      onClick={() => handleDeleteJob(job.id)}
+                      onClick={() => handleDeleteJob(job.JobID)}
                       sx={{ ml: 2 }}
                     >
                       Delete
