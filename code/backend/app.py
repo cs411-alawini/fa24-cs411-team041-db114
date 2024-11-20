@@ -23,8 +23,8 @@ def get_jobs():
 
     with engine.connect() as connection:
         result = connection.execute(text(query))
-        
-    return jsonify(result)
+        jobs = [dict(row._mapping) for row in result]
+    return jsonify(jobs)
 
 @app.route('/api/jobs/submit', methods=['POST'])
 def submit_job():

@@ -16,17 +16,3 @@ def createEngine():
     engine = create_engine(f"mysql+pymysql://{db_user}:{db_password}@{public_ip}/{db_name}")
     return engine
 
-def t():
-    engine = createEngine()
-
-    query = 'select JobID from Job'
-
-    with engine.connect() as connection:
-        result = connection.execute(text(query))
-        print(result)
-        # Adjust this part to match the query result
-        for row in result:
-            print(row)
-        
-        return data
-print(t())

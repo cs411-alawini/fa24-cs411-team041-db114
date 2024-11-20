@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Grid, Paper } from '@mui/material';
-import { PieChart, Pie, Cell } from 'recharts';
+import { Container, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import api from '../services/api';
 
-function JobVisualization() {
+function JobTable() {
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
@@ -14,38 +13,33 @@ function JobVisualization() {
     fetchJobs();
   }, []);
 
-  const companyData = jobs.reduce((acc, job) => {
-    acc[job.company] = (acc[job.company] || 0) + 1;
-    return acc;
-  }, {});
-
-  const pieData = Object.entries(companyData).map(([name, value]) => ({
-    name,
-    value,
-  }));
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
-
   return (
     <Container sx={{ mt: 4 }}>
       <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
-            <PieChart width={400} height={400}>
-              <Pie
-                data={pieData}
-                cx={200}
-                cy={200}
-                labelLine={false}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Job Title</TableCell>
+                    <TableCell>Company</TableCell>
+                    <TableCell>Location</TableCell>
+                    <TableCell>Posted Date</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {jobs.map((job, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{job.JobTitle}</TableCell>
+                      <TableCell>{job.CompanyName}</TableCell>
+                      <TableCell>{job.Rating}</TableCell>
+                      <TableCell>{new Date(job.postedDate).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Paper>
         </Grid>
       </Grid>
@@ -53,4 +47,4 @@ function JobVisualization() {
   );
 }
 
-export default JobVisualization; 
+export default JobTable;
