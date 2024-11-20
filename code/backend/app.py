@@ -30,7 +30,7 @@ def get_jobs():
 @app.route('/api/jobs/submit', methods=['POST'])
 def submit_job():
     new_job = request.json
-    cname = new_job['CompanyName']
+    cname = new_job['companyName']
     companyquery = f'select CompanyName from Company where CompanyName = {cname}'
 
 
@@ -47,9 +47,9 @@ def submit_job():
     with engine.connect() as connection:
         result = connection.execute(text(companyquery))
         if result.rowcount == 0:
-            return jsonify({"success":False,"error":"company not found"}), 201
+            return jsonify({"success":False,"error":'Company not found'}), 201
         connection.execute(query, **new_job)
-    return jsonify({"success":False}), 201
+    return jsonify({"success":True}), 201
 
 @app.route('/api/jobs/<job_id>', methods=['DELETE'])
 def del_job(job_id):

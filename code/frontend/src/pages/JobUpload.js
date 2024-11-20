@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from './api'; // 导入api.js
+import api from '../services/api';
 
 const JobUpload = () => {
   // 定义表单字段的状态
