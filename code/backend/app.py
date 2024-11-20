@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from database import createEngine
 from sqlalchemy import text
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -19,7 +20,7 @@ user_submitted_jobs = []
 def get_jobs():
     engine = createEngine()
 
-    query = 'select * from Job'
+    query = 'select * from Job LIMIT 100;'
 
     with engine.connect() as connection:
         result = connection.execute(text(query))
@@ -29,8 +30,49 @@ def get_jobs():
 @app.route('/api/jobs/submit', methods=['POST'])
 def submit_job():
     new_job = request.json
-    user_submitted_jobs.append(new_job)
-    return jsonify({"message": "Job submitted for review"}), 201
+    cname = new_job['CompanyName']
+    companyquery = f'select CompanyName from Company where CompanyName = {cname}'
+
+
+    columns = ', '.join(new_job.keys())  # keys will be the column names
+    values = ', '.join([f":{key}" for key in new_job.keys()])  # placeholders for SQL query
+    columns = columns +', JobID'
+    values = values + ', '+ str(uuid.uuid4())
+    # Define the SQL query with placeholders
+    query = text(f"""
+        INSERT INTO Job ({columns})
+        VALUES ({values})
+    """)
+    engine = createEngine()
+    with engine.connect() as connection:
+        result = connection.execute(text(companyquery))
+        if result.rowcount == 0:
+            return jsonify({"success":False,"error":"company not found"}), 201
+        connection.execute(query, **new_job)
+    return jsonify({"success":False}), 201
+
+@app.route('/api/jobs/<job_id>', methods=['DELETE'])
+def del_job(job_id):
+    try:
+        # Ensure the job_id is a valid UUID string
+        uuid_obj = uuid.UUID(job_id)  # This will raise an exception if invalid
+    except ValueError:
+        return jsonify({"error": "Invalid UUID format"}), 400
+
+    # Define the SQL query to delete the job by UUID
+    query = text("DELETE FROM Job WHERE id = :job_id")
+
+    # Execute the query
+    engine = createEngine()
+    with engine.connect() as connection:
+        try:
+            result = connection.execute(query, job_id=str(uuid_obj))
+            if result.rowcount > 0:
+                return jsonify({"message": f"Job with ID {job_id} has been deleted."}), 200
+            else:
+                return jsonify({"error": "Job not found"}), 404
+        except Exception as e:
+            return jsonify({"error": f"Failed to delete job: {str(e)}"}), 500
 
 @app.route('/api/favorites', methods=['GET', 'POST'])
 def handle_favorites():
