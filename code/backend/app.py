@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from database import createEngine
+from sqlalchemy import text
 
 app = Flask(__name__)
 CORS(app)
@@ -15,7 +17,14 @@ user_submitted_jobs = []
 
 @app.route('/api/jobs', methods=['GET'])
 def get_jobs():
-    return jsonify(jobs_data)
+    engine = createEngine()
+
+    query = 'select * from Job'
+
+    with engine.connect() as connection:
+        result = connection.execute(text(query))
+        
+    return jsonify(result)
 
 @app.route('/api/jobs/submit', methods=['POST'])
 def submit_job():
