@@ -94,7 +94,7 @@ def del_job(job_id):
 @app.route('/api/jobs/<job_id>', methods=['PUT'])
 def update_job(job_id):
     data = request.get_json()
-
+    job_id= data['JobID']
     # Define the SQL query to update the job
     query = text("""
         UPDATE Job
