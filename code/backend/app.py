@@ -3,6 +3,8 @@ from flask_cors import CORS
 from database import createEngine
 from sqlalchemy import text
 import uuid
+from collections import defaultdict
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -127,6 +129,115 @@ def update_job(job_id):
             return jsonify({'message': 'Job not found'}), 404
 
     return jsonify({'message': 'Job updated successfully'}), 200
+
+@app.route('/api/job-stats', methods=['GET'])
+def get_job_stats():
+    try:
+        engine = createEngine()
+        result = {
+            'salaryData': None,
+            'locationData': None,
+            'jobTypeData': None
+        }
+        
+        with engine.connect() as connection:
+            # Salary distribution
+            try:
+                salary_query = """
+                    SELECT JobTitle as job_title, AVG(CAST(Salary AS DECIMAL)) as avg_salary
+                    FROM Job
+                    WHERE Salary IS NOT NULL 
+                    AND Salary != ''
+                    AND CAST(Salary AS DECIMAL) > 0
+                    GROUP BY JobTitle
+                    ORDER BY avg_salary DESC
+                    LIMIT 10
+                """
+                salary_result = connection.execute(text(salary_query))
+                salary_data = {
+                    'labels': [],
+                    'datasets': [{
+                        'label': 'Average Salary',
+                        'data': [],
+                        'backgroundColor': 'rgba(53, 162, 235, 0.5)',
+                    }]
+                }
+                for row in salary_result:
+                    salary_data['labels'].append(row.job_title)
+                    salary_data['datasets'][0]['data'].append(float(row.avg_salary))
+                result['salaryData'] = salary_data
+            except Exception as e:
+                print(f"Error in salary query: {str(e)}")
+
+            # Location distribution
+            try:
+                location_query = """
+                    SELECT CompanyName as location, COUNT(*) as job_count
+                    FROM Job
+                    WHERE CompanyName IS NOT NULL 
+                    AND CompanyName != ''
+                    GROUP BY CompanyName
+                    ORDER BY job_count DESC
+                    LIMIT 10
+                """
+                location_result = connection.execute(text(location_query))
+                location_data = {
+                    'labels': [],
+                    'datasets': [{
+                        'label': 'Number of Jobs by Company',
+                        'data': [],
+                        'backgroundColor': 'rgba(75, 192, 192, 0.5)',
+                    }]
+                }
+                for row in location_result:
+                    location_data['labels'].append(row.location)
+                    location_data['datasets'][0]['data'].append(row.job_count)
+                result['locationData'] = location_data
+            except Exception as e:
+                print(f"Error in location query: {str(e)}")
+
+            # Job type distribution
+            try:
+                jobtype_query = """
+                    SELECT JobTitle as job_title, COUNT(*) as job_count
+                    FROM Job
+                    WHERE JobTitle IS NOT NULL 
+                    AND JobTitle != ''
+                    GROUP BY JobTitle
+                    ORDER BY job_count DESC
+                    LIMIT 10
+                """
+                jobtype_result = connection.execute(text(jobtype_query))
+                jobtype_data = {
+                    'labels': [],
+                    'datasets': [{
+                        'data': [],
+                        'backgroundColor': [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(153, 102, 255, 0.5)',
+                            'rgba(255, 159, 64, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 206, 86, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                        ],
+                    }]
+                }
+                for row in jobtype_result:
+                    jobtype_data['labels'].append(row.job_title)
+                    jobtype_data['datasets'][0]['data'].append(row.job_count)
+                result['jobTypeData'] = jobtype_data
+            except Exception as e:
+                print(f"Error in job type query: {str(e)}")
+
+            return jsonify(result)
+
+    except Exception as e:
+        print(f"Error in get_job_stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True) 
