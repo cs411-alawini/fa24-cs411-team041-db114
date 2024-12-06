@@ -30,7 +30,8 @@ function JobVisualization() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [chartType, setChartType] = useState('salary'); // salary, location, jobType
+  const [chartType, setChartType] = useState('salary');
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     fetchJobStats();
@@ -52,6 +53,18 @@ function JobVisualization() {
       setError('Failed to fetch job statistics');
       setLoading(false);
     }
+  };
+
+  const handleZoomIn = () => {
+    setZoom(prev => Math.min(prev + 0.1, 2)); // Max zoom: 2x
+  };
+
+  const handleZoomOut = () => {
+    setZoom(prev => Math.max(prev - 0.1, 0.5)); // Min zoom: 0.5x
+  };
+
+  const handleResetZoom = () => {
+    setZoom(1);
   };
 
   const salaryChartConfig = {
@@ -141,7 +154,7 @@ function JobVisualization() {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Job Market Analytics</h1>
       
-      <div className="mb-4">
+      <div className="flex items-center gap-4 mb-4">
         <select
           className="p-2 border rounded"
           value={chartType}
@@ -151,9 +164,39 @@ function JobVisualization() {
           <option value="location">Company Distribution</option>
           <option value="jobType">Job Title Distribution</option>
         </select>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleZoomOut}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            title="Zoom Out"
+          >
+            -
+          </button>
+          <button
+            onClick={handleResetZoom}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            title="Reset Zoom"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleZoomIn}
+            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            title="Zoom In"
+          >
+            +
+          </button>
+          <span className="text-sm text-gray-600">
+            {Math.round(zoom * 100)}%
+          </span>
+        </div>
       </div>
 
-      <div className="w-full max-w-4xl mx-auto">
+      <div 
+        className="w-full max-w-4xl mx-auto transition-transform duration-200"
+        style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
+      >
         {chartType === 'salary' && (
           <Bar options={salaryChartConfig.options} data={salaryChartConfig.data} />
         )}
