@@ -638,6 +638,55 @@ def getFavoriteJob(user_id):
             } for row in results]
     return jsonify(jobs)
 
+@app.route('/api/reviews/<job_id>', methods=['GET'])
+def get_reviews(job_id):
+    query = text("""
+        SELECT ReviewID, JobID, Content, Rating
+        FROM Review
+        WHERE JobID = :job_id
+        ORDER BY ReviewID DESC
+    """)
+    
+    engine = createEngine()
+    with engine.connect() as connection:
+        try:
+            result = connection.execute(query, {"job_id": job_id})
+            reviews = [dict(row._mapping) for row in result]
+            return jsonify(reviews)
+        except Exception as e:
+            print(f"Error getting reviews: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+@app.route('/api/reviews', methods=['POST'])
+def add_review():
+    data = request.json
+    job_id = data.get('jobId')
+    content = data.get('content')
+    rating = data.get('rating')
+    
+    if not all([job_id, content, rating]):
+        return jsonify({"success": False, "error": "Missing required fields"}), 400
+        
+    review_id = generate_user_id()  # Reusing the existing ID generator
+    
+    query = text("""
+        INSERT INTO Review (ReviewID, JobID, Content, Rating)
+        VALUES (:review_id, :job_id, :content, :rating)
+    """)
+    
+    engine = createEngine()
+    with engine.connect() as connection:
+        try:
+            connection.execute(query, {
+                "review_id": review_id,
+                "job_id": job_id,
+                "content": content,
+                "rating": rating
+            })
+            connection.commit()
+            return jsonify({"success": True, "message": "Review added successfully"}), 201
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     create_stored_procedure()

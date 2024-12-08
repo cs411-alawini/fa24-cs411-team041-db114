@@ -158,7 +158,8 @@ function Dashboard() {
                 <th>Sponsored</th>
                 <th>Salary</th>
                 <th>Rating</th>
-                <th>Favorite</th> {/* Added Favorite column */}
+                <th>Favorite</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -179,6 +180,15 @@ function Dashboard() {
                       }
                       label="Favorite"
                     />
+                  </td>
+                  <td>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={() => navigate(`/job-review/${job.JobID}`)}
+                    >
+                      Reviews
+                    </Button>
                   </td>
                 </tr>
               ))}
