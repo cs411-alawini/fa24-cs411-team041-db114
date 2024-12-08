@@ -181,23 +181,18 @@ def get_job_stats():
         result = {
             'salaryData': None,
             'locationData': None,
-            'jobTypeData': None
+            'jobTypeData': None,
+            'ratingData': None
         }
         
         with engine.connect() as connection:
-            # Salary distribution
+            # Call stored procedure for salary and location stats
             try:
-                salary_query = """
-                    SELECT JobTitle as job_title, AVG(CAST(Salary AS DECIMAL)) as avg_salary
-                    FROM Job
-                    WHERE Salary IS NOT NULL 
-                    AND Salary != ''
-                    AND CAST(Salary AS DECIMAL) > 0
-                    GROUP BY JobTitle
-                    ORDER BY avg_salary DESC
-                    LIMIT 10
-                """
-                salary_result = connection.execute(text(salary_query))
+                print("Executing stored procedure...")
+                # Execute stored procedure and fetch all results
+                results = connection.execute(text("CALL GetSalaryAndLocationStats()"))
+                
+                # First result set: Salary data
                 salary_data = {
                     'labels': [],
                     'datasets': [{
@@ -206,17 +201,21 @@ def get_job_stats():
                         'backgroundColor': 'rgba(53, 162, 235, 0.5)',
                     }]
                 }
-                for row in salary_result:
-                    salary_data['labels'].append(row.job_title)
+                
+                salary_results = results.fetchall()
+                print(f"Salary results: {salary_results}")
+                
+                for row in salary_results:
+                    salary_data['labels'].append(str(row.job_title))
                     salary_data['datasets'][0]['data'].append(float(row.avg_salary))
                 result['salaryData'] = salary_data
-            except Exception as e:
-                print(f"Error in salary query: {str(e)}")
 
-            # Location distribution
-            try:
+                # Second result set: Location data
+                # Execute the location query separately
                 location_query = """
-                    SELECT CompanyName as location, COUNT(*) as job_count
+                    SELECT 
+                        CompanyName as location, 
+                        COUNT(*) as job_count
                     FROM Job
                     WHERE CompanyName IS NOT NULL 
                     AND CompanyName != ''
@@ -224,7 +223,9 @@ def get_job_stats():
                     ORDER BY job_count DESC
                     LIMIT 10
                 """
-                location_result = connection.execute(text(location_query))
+                location_results = connection.execute(text(location_query)).fetchall()
+                print(f"Location results: {location_results}")
+                
                 location_data = {
                     'labels': [],
                     'datasets': [{
@@ -233,51 +234,87 @@ def get_job_stats():
                         'backgroundColor': 'rgba(75, 192, 192, 0.5)',
                     }]
                 }
-                for row in location_result:
-                    location_data['labels'].append(row.location)
+                
+                for row in location_results:
+                    location_data['labels'].append(str(row.location))
                     location_data['datasets'][0]['data'].append(row.job_count)
                 result['locationData'] = location_data
+                
             except Exception as e:
-                print(f"Error in location query: {str(e)}")
+                print(f"Error in stored procedure: {str(e)}")
+                print(f"Full error details: {e.__class__.__name__}")
 
-            # Job type distribution
-            try:
-                jobtype_query = """
-                    SELECT JobTitle as job_title, COUNT(*) as job_count
-                    FROM Job
-                    WHERE JobTitle IS NOT NULL 
-                    AND JobTitle != ''
-                    GROUP BY JobTitle
-                    ORDER BY job_count DESC
-                    LIMIT 10
-                """
-                jobtype_result = connection.execute(text(jobtype_query))
-                jobtype_data = {
-                    'labels': [],
-                    'datasets': [{
-                        'data': [],
-                        'backgroundColor': [
-                            'rgba(255, 99, 132, 0.5)',
-                            'rgba(54, 162, 235, 0.5)',
-                            'rgba(255, 206, 86, 0.5)',
-                            'rgba(75, 192, 192, 0.5)',
-                            'rgba(153, 102, 255, 0.5)',
-                            'rgba(255, 159, 64, 0.5)',
-                            'rgba(255, 99, 132, 0.5)',
-                            'rgba(54, 162, 235, 0.5)',
-                            'rgba(255, 206, 86, 0.5)',
-                            'rgba(75, 192, 192, 0.5)',
-                        ],
-                    }]
-                }
-                for row in jobtype_result:
-                    jobtype_data['labels'].append(row.job_title)
-                    jobtype_data['datasets'][0]['data'].append(row.job_count)
-                result['jobTypeData'] = jobtype_data
-            except Exception as e:
-                print(f"Error in job type query: {str(e)}")
+            # Create a new connection for the transaction
+            with engine.connect() as connection:
+                # Start transaction for job type and rating stats
+                trans = connection.begin()
+                try:
+                    # Job type distribution (Uses: SET Operation, GROUP BY)
+                    jobtype_query = """
+                        SELECT job_title, COUNT(*) as job_count
+                        FROM (
+                            SELECT JobTitle as job_title FROM Job WHERE Sponsored = TRUE
+                            UNION ALL
+                            SELECT JobTitle FROM Job WHERE Sponsored = FALSE
+                        ) combined_jobs
+                        GROUP BY job_title
+                        ORDER BY job_count DESC
+                        LIMIT 10
+                    """
+                    jobtype_result = connection.execute(text(jobtype_query))
+                    jobtype_data = {
+                        'labels': [],
+                        'datasets': [{
+                            'data': [],
+                            'backgroundColor': [
+                                'rgba(255, 99, 132, 0.5)',
+                                'rgba(54, 162, 235, 0.5)',
+                                'rgba(255, 206, 86, 0.5)',
+                                'rgba(75, 192, 192, 0.5)',
+                                'rgba(153, 102, 255, 0.5)',
+                                'rgba(255, 159, 64, 0.5)',
+                            ],
+                        }]
+                    }
+                    for row in jobtype_result:
+                        jobtype_data['labels'].append(row.job_title)
+                        jobtype_data['datasets'][0]['data'].append(row.job_count)
+                    result['jobTypeData'] = jobtype_data
 
-            return jsonify(result)
+                    # Rating distribution (Uses: JOIN, GROUP BY, Aggregation)
+                    rating_query = """
+                        SELECT 
+                            j.Rating,
+                            COUNT(*) as job_count,
+                            AVG(CAST(j.Salary AS DECIMAL)) as avg_salary
+                        FROM Job j
+                        JOIN Company c ON j.CompanyName = c.CompanyName
+                        WHERE j.Rating IS NOT NULL 
+                        AND j.Rating != ''
+                        GROUP BY j.Rating
+                        ORDER BY j.Rating DESC
+                    """
+                    rating_result = connection.execute(text(rating_query))
+                    rating_data = {
+                        'labels': [],
+                        'datasets': [{
+                            'label': 'Number of Jobs',
+                            'data': [],
+                            'backgroundColor': 'rgba(153, 102, 255, 0.5)',
+                        }]
+                    }
+                    for row in rating_result:
+                        rating_data['labels'].append(f"Rating {row.Rating}")
+                        rating_data['datasets'][0]['data'].append(row.job_count)
+                    result['ratingData'] = rating_data
+
+                    # Commit transaction
+                    trans.commit()
+                except Exception as e:
+                    trans.rollback()
+                    print(f"Error in transaction: {str(e)}")
+
+        return jsonify(result)
 
     except Exception as e:
         print(f"Error in get_job_stats: {str(e)}")
@@ -353,7 +390,7 @@ def register_user():
 
 
 
-# 下面这个我随便写的，是为了提醒，处理'''当前登录'''用户的收藏
+# 下面这个我随便写的，是为了提醒，处'''当前登录'''用户的收藏
 # @app.route('/api/favorites', methods=['GET'])
 # def get_favorites():
 #     user_id = request.args.get('user_id') # 这里是从前端返回的当前用户的用户id
@@ -534,6 +571,51 @@ def update_job():
 
     return jsonify({"success": True, "message": "Job updated successfully"})
 
+def create_stored_procedure():
+    engine = createEngine()
+    with engine.connect() as connection:
+        try:
+            # Drop existing procedure if it exists
+            connection.execute(text("DROP PROCEDURE IF EXISTS GetSalaryAndLocationStats"))
+            
+            # Create new procedure with advanced queries
+            procedure_sql = """
+            CREATE PROCEDURE GetSalaryAndLocationStats()
+            BEGIN
+                -- First result: Salary stats (Uses: JOIN, GROUP BY, Aggregation)
+                SELECT 
+                    j.JobTitle as job_title, 
+                    AVG(CAST(j.Salary AS DECIMAL)) as avg_salary
+                FROM Job j
+                JOIN Company c ON j.CompanyName = c.CompanyName
+                WHERE j.Salary IS NOT NULL 
+                AND j.Salary != ''
+                GROUP BY j.JobTitle
+                ORDER BY avg_salary DESC
+                LIMIT 10;
+
+                -- Second result: Location stats (Uses: Subquery, GROUP BY, Aggregation)
+                SELECT 
+                    CompanyName as location, 
+                    COUNT(*) as job_count
+                FROM Job
+                WHERE CompanyName IN (
+                    SELECT CompanyName
+                    FROM Job
+                    GROUP BY CompanyName
+                    HAVING COUNT(*) > 1
+                )
+                GROUP BY CompanyName
+                ORDER BY job_count DESC
+                LIMIT 10;
+            END
+            """
+            connection.execute(text(procedure_sql))
+            print("Stored procedure created successfully")
+        except Exception as e:
+            print(f"Error creating stored procedure: {str(e)}")
+
+# Call this function when your app starts
 @app.route('/api/FavoriteJob/<user_id>', methods=['GET'])
 def getFavoriteJob(user_id):
     query = text("""
@@ -558,4 +640,5 @@ def getFavoriteJob(user_id):
 
 
 if __name__ == '__main__':
+    create_stored_procedure()
     app.run(debug=True) 
