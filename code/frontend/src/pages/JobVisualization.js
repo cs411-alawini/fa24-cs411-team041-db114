@@ -27,6 +27,7 @@ function JobVisualization() {
     salaryData: null,
     locationData: null,
     jobTypeData: null,
+    ratingData: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -147,6 +148,37 @@ function JobVisualization() {
     },
   };
 
+  const ratingChartConfig = {
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      plugins: {
+        legend: { 
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Job Distribution by Rating',
+        },
+      },
+    },
+    data: jobStats.ratingData || {
+      labels: [],
+      datasets: [{
+        label: 'Number of Jobs',
+        data: [],
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.5)',
+          'rgba(54, 162, 235, 0.5)',
+          'rgba(255, 206, 86, 0.5)',
+          'rgba(75, 192, 192, 0.5)',
+          'rgba(153, 102, 255, 0.5)',
+        ],
+      }],
+    },
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>{error}</div>;
 
@@ -163,6 +195,7 @@ function JobVisualization() {
           <option value="salary">Salary Distribution</option>
           <option value="location">Company Distribution</option>
           <option value="jobType">Job Title Distribution</option>
+          <option value="rating">Rating Distribution</option>
         </select>
 
         <div className="flex items-center gap-2">
@@ -206,6 +239,11 @@ function JobVisualization() {
         {chartType === 'jobType' && (
           <div className="max-w-2xl mx-auto">
             <Pie options={jobTypeChartConfig.options} data={jobTypeChartConfig.data} />
+          </div>
+        )}
+        {chartType === 'rating' && (
+          <div className="max-w-2xl mx-auto">
+            <Bar options={ratingChartConfig.options} data={ratingChartConfig.data} />
           </div>
         )}
       </div>
