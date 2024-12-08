@@ -19,6 +19,8 @@ export const api = {
   getUploadHistory: (userID) => axios.get(`${API_URL}/upload-history/${userID}`),
   updateJob: (data) => axios.post(`${API_URL}/update-job`, data),
   getFavoriteJob: (userID) => axios.get(`${API_URL}/FavoriteJob/${userID}`),
+  getReviews: (jobId) => axios.get(`${API_URL}/reviews/${jobId}`),
+  addReview: (reviewData) => axios.post(`${API_URL}/reviews`, reviewData),
 };
 
 export default api; 

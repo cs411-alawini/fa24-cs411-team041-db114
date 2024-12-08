@@ -8,6 +8,7 @@ import FavoriteJobs from './pages/FavoriteJobs';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
+import JobReview from './pages/JobReview';
 
 const theme = createTheme();
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/visualization" element={<JobVisualization />} />
           <Route path="/upload" element={<JobUpload />} />
           <Route path="/favorites" element={<FavoriteJobs />} />
+          <Route path="/job-review/:jobId" element={<JobReview />} />
           {/* <Route path="*" element={<Navigate to="/login/user" />} /> */}
         </Routes>
       </Router>
