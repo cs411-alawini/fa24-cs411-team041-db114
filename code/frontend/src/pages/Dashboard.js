@@ -38,7 +38,7 @@ function Dashboard() {
         console.error('User is not logged in.');
         return;
       }
-      const response = await api.getJobs(userID);
+      const response = await api.getJobs(userID,filters);
       setJobs(response.data);
     } catch (error) {
       console.error('Error fetching jobs:', error);
@@ -158,7 +158,7 @@ function Dashboard() {
                 <th>Sponsored</th>
                 <th>Salary</th>
                 <th>Rating</th>
-                <th>Favorite</th> {/* Added Favorite column */}
+                <th>Favorite</th>
               </tr>
             </thead>
             <tbody>

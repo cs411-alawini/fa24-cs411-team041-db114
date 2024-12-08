@@ -64,6 +64,26 @@ def get_jobs(user_id):
         
     return jsonify(jobs)
 
+@app.route('/api/FavoriteJob/<user_id>', methods=['GET'])
+def getFavoriteJob(user_id):
+    engine = createEngine()
+
+    query = """
+        SELECT J.*, 
+               CASE WHEN F.UserID IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
+        FROM Job J
+        INNER JOIN Favorite F ON F.JobID = J.JobID AND F.UserID = :user_id
+        WHERE J.ApprovalStatus = TRUE LIMIT 50
+    """
+    
+
+    with engine.connect() as connection:
+        result = connection.execute(text(query), {
+            "user_id": user_id  # Pass the user_id for checking if the job is favorited
+        })
+        jobs = [dict(row._mapping) for row in result]
+        
+    return jsonify(jobs)
 
 @app.route('/api/updateFavoriteStatus', methods=['POST'])
 def update_favorite_job():
@@ -615,28 +635,8 @@ def create_stored_procedure():
         except Exception as e:
             print(f"Error creating stored procedure: {str(e)}")
 
-# Call this function when your app starts
-@app.route('/api/FavoriteJob/<user_id>', methods=['GET'])
-def getFavoriteJob(user_id):
-    query = text("""
-        SELECT J.JobID, J.JobTitle, J.JobSnippet, J.JobLink, J.Salary, J.CompanyName, UH.AdminComment
-        FROM Favorite F
-        JOIN Job J ON F.JobID = J.JobID
-        WHERE F.UserID = :user_id
-    """)
-    engine = createEngine()
-    with engine.connect() as connection:
-        results = connection.execute(query, {"user_id": user_id}).fetchall()
-        jobs = [{
-                "JobID": row[0],
-                "JobTitle": row[1],
-                "JobSnippet": row[2],
-                "JobLink": row[3],
-                "Salary": row[4],
-                "CompanyName": row[5],
-                "AdminComment": row[6]
-            } for row in results]
-    return jsonify(jobs)
+
+
 
 
 if __name__ == '__main__':
