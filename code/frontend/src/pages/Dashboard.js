@@ -143,7 +143,7 @@ function Dashboard() {
                 <th>Sponsored</th>
                 <th>Salary</th>
                 <th>Rating</th>
-                <th>Actions</th> {/* 添加操作列 */}
+                {/* <th>Actions</th> */}
               </tr>
             </thead>
             <tbody>
@@ -155,7 +155,7 @@ function Dashboard() {
                   <td>{job.Salary}</td>
                   <td>{job.Rating}</td>
                   <td>
-                    <Button
+                    {/* <Button
                       variant="outlined"
                       color="primary"
                       onClick={() => {
@@ -165,15 +165,15 @@ function Dashboard() {
                       }}
                     >
                       Update
-                    </Button>
-                    <Button
+                    </Button> */}
+                    {/* <Button
                       variant="outlined"
                       color="secondary"
                       onClick={() => handleDeleteJob(job.JobID)}
                       sx={{ ml: 2 }}
                     >
                       Delete
-                    </Button>
+                    </Button> */}
                   </td>
                 </tr>
               ))}

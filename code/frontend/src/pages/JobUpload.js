@@ -1,125 +1,142 @@
-import React, { useState } from 'react';
-import api from '../services/api';
+import React, { useState, useEffect } from 'react';
+import { TextField, Button, Container, Typography, Box, Table, TableBody, TableCell, TableHead, TableRow, Checkbox, FormControlLabel } from '@mui/material';
+import { api } from '../services/api';
 
-const JobUpload = () => {
-  // 定义表单字段的状态
-  const [JobTitle, setJobTitle] = useState('');
-  const [CompanyName, setCompanyName] = useState('');
-  const [JobSnippet, setJobSnippet] = useState('');
-  const [JobLink, setJobLink] = useState('');
-  const [Sponsored, setSponsored] = useState(false);
-  const [Salary, setSalary] = useState('');
-  const [message, setMessage] = useState(''); // 用于显示消息
+function JobUpload() {
+  const [jobData, setJobData] = useState({
+    jobTitle: '',
+    jobSnippet: '',
+    jobLink: '',
+    sponsored: false,
+    salary: '',
+    rating: '',
+    companyName: '',
+  });
+  const [uploadHistory, setUploadHistory] = useState([]);
+  const [editingJob, setEditingJob] = useState(null);
+  const userID = localStorage.getItem('user_id');
 
-  // 处理表单提交
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setJobData({ ...jobData, [name]: value });
+  };
 
-    // 构造 job 数据
-    const job = {
-      JobTitle,
-      CompanyName,
-      JobSnippet,
-      JobLink,
-      Sponsored,
-      Salary: parseInt(Salary, 10),
-    };
+  const handleCheckboxChange = (e) => {
+    const { checked } = e.target;
+    setJobData({ ...jobData, sponsored: checked });
+  };
 
+  const handleUpload = async () => {
     try {
-      // 调用 API 提交 job 数据
-      const response = await api.submitJob(job);
-
-      // 判断后端返回的结果，显示相应的提示信息
-      if (response.data.success) {
-        setMessage('Upload successful!');
-      } else if (response.data.error === 'Company not found') {
-        setMessage('Upload failed: Company does not exist.');
-      } else {
-        setMessage('Upload failed: Unknown error.');
-      }
+      await api.uploadJob({ ...jobData, userID });
+      alert('Job uploaded successfully!');
+      fetchUploadHistory();
     } catch (error) {
-      // 处理请求错误
-      setMessage('Upload failed: Server error.');
-      console.error('Upload error:', error);
+      alert('Failed to upload job. Please try again.');
     }
   };
 
+  const fetchUploadHistory = async () => {
+    try {
+      const response = await api.getUploadHistory(userID);
+      setUploadHistory(response.data);
+    } catch (error) {
+      console.error('Failed to fetch upload history', error);
+    }
+  };
+
+  const handleEdit = (job) => {
+    setEditingJob(job);
+    setJobData(job);
+  };
+
+  const handleUpdate = async () => {
+    try {
+      await api.updateJob(jobData);
+      alert('Job updated successfully!');
+      setEditingJob(null);
+      fetchUploadHistory();
+    } catch (error) {
+      alert('Failed to update job. Please try again.');
+    }
+  };
+
+  useEffect(() => {
+    fetchUploadHistory();
+  }, []);
+
   return (
-    <div>
-      <h1>Job Upload Page</h1>
-
-      {/* 显示上传成功或失败的消息 */}
-      {message && <div className="message">{message}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="jobTitle">Job Title:</label>
-          <input
-            type="text"
-            id="JobTitle"
-            value={JobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
-            required
+    <Container>
+      <Typography variant="h4" sx={{ mb: 3 }}>
+        Job Upload
+      </Typography>
+      <Box>
+        {['jobTitle', 'jobSnippet', 'jobLink', 'salary', 'rating', 'companyName'].map((field) => (
+          <TextField
+            key={field}
+            label={field.replace(/([A-Z])/g, ' $1')}
+            name={field}
+            variant="outlined"
+            fullWidth
+            sx={{ mb: 2 }}
+            value={jobData[field]}
+            onChange={handleInputChange}
           />
-        </div>
+        ))}
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={jobData.sponsored}
+              onChange={handleCheckboxChange}
+              name="sponsored"
+            />
+          }
+          label="Sponsored"
+        />
+        <Button variant="contained" color="primary" onClick={editingJob ? handleUpdate : handleUpload}>
+          {editingJob ? 'Update' : 'Upload'}
+        </Button>
+      </Box>
 
-        <div>
-          <label htmlFor="companyName">Company Name:</label>
-          <input
-            type="text"
-            id="CompanyName"
-            value={CompanyName}
-            onChange={(e) => setCompanyName(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="jobSnippet">Job Snippet:</label>
-          <textarea
-            id="JobSnippet"
-            value={JobSnippet}
-            onChange={(e) => setJobSnippet(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="jobLink">Job Link:</label>
-          <input
-            type="text"
-            id="JobLink"
-            value={JobLink}
-            onChange={(e) => setJobLink(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="sponsored">Sponsored:</label>
-          <input
-            type="checkbox"
-            id="Sponsored"
-            checked={Sponsored}
-            onChange={(e) => setSponsored(e.target.checked)}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="salary">Salary:</label>
-          <input
-            type="number"
-            id="Salary"
-            value={Salary}
-            onChange={(e) => setSalary(e.target.value)}
-            required
-          />
-        </div>
-
-        <button type="submit">UPLOAD</button>
-      </form>
-    </div>
+      <Typography variant="h6" sx={{ mt: 5 }}>
+        Upload History
+      </Typography>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Job Title</TableCell>
+            <TableCell>Snippet</TableCell>
+            <TableCell>Link</TableCell>
+            <TableCell>Salary</TableCell>
+            <TableCell>Company</TableCell>
+            <TableCell>Admin Comment</TableCell>
+            <TableCell>Actions</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {uploadHistory.map((job) => (
+            <TableRow key={job.JobID}>
+              <TableCell>{job.JobTitle}</TableCell>
+              <TableCell>{job.JobSnippet}</TableCell>
+              <TableCell>
+                <a href={job.JobLink} target="_blank" rel="noopener noreferrer">
+                  {job.JobLink}
+                </a>
+              </TableCell>
+              <TableCell>{job.Salary}</TableCell>
+              <TableCell>{job.CompanyName}</TableCell>
+              <TableCell>{job.AdminComment || 'N/A'}</TableCell>
+              <TableCell>
+                <Button variant="outlined" color="secondary" onClick={() => handleEdit(job)}>
+                  Edit
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Container>
   );
-};
+}
 
 export default JobUpload;
