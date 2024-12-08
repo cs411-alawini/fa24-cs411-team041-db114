@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Grid, Card, CardContent, Typography, Button, TextField, Box, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import { Container, Grid, Card, CardContent, Typography, Button, TextField, Box, Dialog, DialogActions, DialogContent, DialogTitle, Checkbox, FormControlLabel } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
 function Dashboard() {
   const navigate = useNavigate();
 
-  // 用于存储职位数据和搜索条件
   const [jobs, setJobs] = useState([]);
   const [search, setSearch] = useState({ jobTitle: '', companyName: '', sponsored: '' });
   const [openDialog, setOpenDialog] = useState(false);
@@ -31,17 +30,22 @@ function Dashboard() {
     },
   ];
 
-  // 获取所有职位
+  // Fetch all jobs
   const fetchJobs = async (filters = {}) => {
     try {
-      const response = await api.getJobs(filters);
+      const userID = localStorage.getItem('user_id');  // Get user_id from localStorage
+      if (!userID) {
+        console.error('User is not logged in.');
+        return;
+      }
+      const response = await api.getJobs(userID);
       setJobs(response.data);
     } catch (error) {
       console.error('Error fetching jobs:', error);
     }
   };
 
-  // 搜索功能
+  // Handle search
   const handleSearch = async () => {
     const filters = {
       jobTitle: search.jobTitle,
@@ -51,35 +55,46 @@ function Dashboard() {
     fetchJobs(filters);
   };
 
-  // 更新职位信息
+  // Update job data
   const handleUpdateJob = async () => {
     try {
       const updatedJob = { ...jobToUpdate, ...newJobData };
       await api.updateJob(updatedJob);
       setOpenDialog(false);
-      fetchJobs(); // 更新 job 列表
+      fetchJobs(); // Refresh job list
     } catch (error) {
       console.error('Error updating job:', error);
     }
   };
 
-  // 删除职位
+  // Delete job
   const handleDeleteJob = async (jobId) => {
     try {
       await api.deleteJob(jobId);
-      fetchJobs(); // 删除后刷新 job 列表
+      fetchJobs(); // Refresh job list after deletion
     } catch (error) {
       console.error('Error deleting job:', error);
     }
   };
 
+  // Toggle favorite status
+  const handleToggleFavorite = async (jobId, isFavorite) => {
+    try {
+      const userID = localStorage.getItem('user_id');
+      await api.updateFavoriteStatus({ user_id: userID, job_id: jobId, isf: isFavorite});
+      fetchJobs();
+    } catch (error) {
+      console.error('Error updating favorite status:', error);
+    }
+  };
+
   useEffect(() => {
-    fetchJobs(); // 组件加载时获取所有职位
+    fetchJobs(); // Fetch all jobs on component mount
   }, []);
 
   return (
     <Container sx={{ mt: 4 }}>
-      {/* Features - 保持原有功能按钮 */}
+      {/* Features */}
       <Grid container spacing={4} sx={{ mb: 4 }}>
         {features.map((feature) => (
           <Grid item xs={12} md={4} key={feature.title}>
@@ -104,7 +119,7 @@ function Dashboard() {
         ))}
       </Grid>
 
-      {/* 搜索框 */}
+      {/* Search Box */}
       <Box sx={{ mb: 4 }}>
         <TextField
           label="Job Title"
@@ -132,7 +147,7 @@ function Dashboard() {
         </Button>
       </Box>
 
-      {/* Job 列表 */}
+      {/* Job List Table */}
       <Grid container spacing={4}>
         <Grid item xs={12}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -143,37 +158,27 @@ function Dashboard() {
                 <th>Sponsored</th>
                 <th>Salary</th>
                 <th>Rating</th>
-                {/* <th>Actions</th> */}
+                <th>Favorite</th> {/* Added Favorite column */}
               </tr>
             </thead>
             <tbody>
               {jobs.map((job) => (
-                <tr key={job.id}>
+                <tr key={job.JobID}>
                   <td>{job.JobTitle}</td>
                   <td>{job.CompanyName}</td>
                   <td>{job.Sponsored ? 'Yes' : 'No'}</td>
                   <td>{job.Salary}</td>
                   <td>{job.Rating}</td>
                   <td>
-                    {/* <Button
-                      variant="outlined"
-                      color="primary"
-                      onClick={() => {
-                        setJobToUpdate(job);
-                        setNewJobData({ jobTitle: job.jobTitle, companyName: job.CompanyName, sponsored: job.Sponsored });
-                        setOpenDialog(true);
-                      }}
-                    >
-                      Update
-                    </Button> */}
-                    {/* <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={() => handleDeleteJob(job.JobID)}
-                      sx={{ ml: 2 }}
-                    >
-                      Delete
-                    </Button> */}
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={job.isFavorite || false} // Use the favorite status from the job
+                          onChange={() => handleToggleFavorite(job.JobID, job.isFavorite)}
+                        />
+                      }
+                      label="Favorite"
+                    />
                   </td>
                 </tr>
               ))}
@@ -182,7 +187,7 @@ function Dashboard() {
         </Grid>
       </Grid>
 
-      {/* 更新职位的弹窗 */}
+      {/* Update Job Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Update Job</DialogTitle>
         <DialogContent>

@@ -28,31 +28,65 @@ jobs_data = [
 favorite_jobs = []
 user_submitted_jobs = []
 
-@app.route('/api/jobs', methods=['GET'])
-def get_jobs():
+@app.route('/api/jobs/<user_id>', methods=['GET'])
+def get_jobs(user_id):
     job_title = request.args.get('jobTitle', default='', type=str)
     company_name = request.args.get('companyName', default='', type=str)
     sponsored = request.args.get('sponsored', default='', type=str)
 
     engine = createEngine()
 
-    query = 'select * from Job WHERE 1=1'
+    query = """
+        SELECT J.*, 
+               CASE WHEN F.UserID IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
+        FROM Job J
+        LEFT JOIN Favorite F ON F.JobID = J.JobID AND F.UserID = :user_id
+        WHERE 1=1
+    """
+    
     if job_title:
-        query += f" AND JobTitle LIKE :job_title"
+        query += f" AND J.JobTitle LIKE :job_title"
     if company_name:
-        query += f" AND CompanyName LIKE :company_name"
+        query += f" AND J.CompanyName LIKE :company_name"
     if sponsored:
-        query += f" AND Sponsored = :sponsored"
-    query += ' AND ApprovalStatus = TRUE LIMIT 50'  # Add the LIMIT at the end
+        query += f" AND J.Sponsored = :sponsored"
+    
+    query += ' AND J.ApprovalStatus = TRUE LIMIT 50'  # Add the LIMIT at the end
 
     with engine.connect() as connection:
-        result = connection.execute(text(query),{
+        result = connection.execute(text(query), {
             "job_title": f"%{job_title}%",  # Use wildcard for partial matching
             "company_name": f"%{company_name}%",
-            "sponsored": sponsored
+            "sponsored": sponsored,
+            "user_id": user_id  # Pass the user_id for checking if the job is favorited
         })
         jobs = [dict(row._mapping) for row in result]
+        
     return jsonify(jobs)
+
+
+@app.route('/api/updateFavoriteStatus', methods=['POST'])
+def update_favorite_job():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    job_id = data.get('job_id')
+    isf = data.get('isf')
+    print(isf)
+    if isf == 0:
+        query = text("""
+            INSERT INTO Favorite (UserID, JobID)
+            VALUES (:user_id, :job_id)
+        """)
+    else:
+        query = text("""
+            DELETE FROM Favorite WHERE JobId = :job_id AND UserID = :user_id
+        """)
+    engine = createEngine()
+    with engine.connect() as connection:
+        connection.execute(query, {'user_id':user_id,'job_id':job_id})
+        connection.commit()
+        return jsonify({"success": True}), 201
+
 
 # @app.route('/api/jobs/submit', methods=['POST'])
 # def submit_job():
@@ -248,6 +282,7 @@ def get_job_stats():
     except Exception as e:
         print(f"Error in get_job_stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
     
 
 @app.route('/api/login', methods=['POST'])
@@ -498,6 +533,28 @@ def update_job():
         connection.commit()
 
     return jsonify({"success": True, "message": "Job updated successfully"})
+
+@app.route('/api/FavoriteJob/<user_id>', methods=['GET'])
+def getFavoriteJob(user_id):
+    query = text("""
+        SELECT J.JobID, J.JobTitle, J.JobSnippet, J.JobLink, J.Salary, J.CompanyName, UH.AdminComment
+        FROM Favorite F
+        JOIN Job J ON F.JobID = J.JobID
+        WHERE F.UserID = :user_id
+    """)
+    engine = createEngine()
+    with engine.connect() as connection:
+        results = connection.execute(query, {"user_id": user_id}).fetchall()
+        jobs = [{
+                "JobID": row[0],
+                "JobTitle": row[1],
+                "JobSnippet": row[2],
+                "JobLink": row[3],
+                "Salary": row[4],
+                "CompanyName": row[5],
+                "AdminComment": row[6]
+            } for row in results]
+    return jsonify(jobs)
 
 
 if __name__ == '__main__':

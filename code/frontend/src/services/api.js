@@ -3,7 +3,8 @@ import axios from 'axios';
 const API_URL = 'http://localhost:5000/api';
 
 export const api = {
-  getJobs: (searchParams) => axios.get(`${API_URL}/jobs`, { params: searchParams }),
+  getJobs: (userID,searchParams) => axios.get(`${API_URL}/jobs/${userID}`, { params: searchParams }),
+  updateFavoriteStatus: (data) => axios.post(`${API_URL}/updateFavoriteStatus`, data),
   updateJob: (job) => axios.put(`${API_URL}/jobs/${job.id}`, job),
   deleteJob: (jobId) => axios.delete(`${API_URL}/jobs/${jobId}`),
   submitJob: (job) => axios.post(`${API_URL}/jobs/submit`, job),
@@ -17,6 +18,7 @@ export const api = {
   uploadJob: (data) => axios.post(`${API_URL}/upload-job`, data),
   getUploadHistory: (userID) => axios.get(`${API_URL}/upload-history/${userID}`),
   updateJob: (data) => axios.post(`${API_URL}/update-job`, data),
+  getFavoriteJob: (userID) => axios.get(`${API_URL}/FavoriteJob/${userID}`),
 };
 
 export default api; 
