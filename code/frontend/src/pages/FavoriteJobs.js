@@ -29,7 +29,7 @@ function FavoriteJobs() {
   const fetchRecommendedJobs = async () => {
     try {
       const response = await api.getRecommendedJobs(userID); // API for recommended jobs
-      setRecommendedJobs(response.data.slice(0, 3)); // Limit to 3 jobs
+      setRecommendedJobs(response.data); // Limit to 3 jobs
     } catch (error) {
       console.error('Error fetching recommended jobs:', error);
     }
@@ -100,9 +100,6 @@ function FavoriteJobs() {
                   </Typography>
                 </CardContent>
                 <CardActions>
-                  <Button size="small" color="primary">
-                    Apply
-                  </Button>
                   <Button
                     size="small"
                     color={job.isFavorite ? 'secondary' : 'primary'}

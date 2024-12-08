@@ -7,6 +7,9 @@ from collections import defaultdict
 from datetime import datetime
 import random
 import string
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
 
 def generate_user_id():
     """generate a random string as UserID (length = 40)"""
@@ -84,6 +87,51 @@ def getFavoriteJob(user_id):
         jobs = [dict(row._mapping) for row in result]
         
     return jsonify(jobs)
+
+
+@app.route('/api/recommendations/<user_id>', methods=['GET'])
+def getRecommendeddJobs(user_id):
+    engine = createEngine()
+
+    # Query to fetch the jobs the user has favorited (limit 50 jobs)
+    query = """
+        SELECT J.*, 
+               CASE WHEN F.UserID IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
+        FROM Job J
+        LEFT JOIN Favorite F ON F.JobID = J.JobID AND F.UserID = :user_id
+        WHERE J.ApprovalStatus = TRUE
+    """
+    
+    with engine.connect() as connection:
+        result = connection.execute(text(query), {"user_id": user_id})
+        jobs = [dict(row._mapping) for row in result]
+    
+    if not jobs:
+        return jsonify([])  # If no jobs are found for the user, return empty list
+    
+    job_data = pd.DataFrame(jobs)
+
+    # Get the job titles for the jobs the user has favorited (or relevant jobs)
+    favorite_jobs = job_data[job_data['isFavorite'] == True]
+    favorite_job_ids = favorite_jobs['JobID'].tolist()
+    non_favorite_jobs = job_data[~job_data['JobID'].isin(favorite_job_ids)]
+
+
+    tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf_vectorizer.fit_transform(non_favorite_jobs['JobTitle'])
+
+    # Compute TF-IDF vector for the user-provided job title
+    user_vector = tfidf_vectorizer.transform(favorite_jobs['JobTitle'])
+
+    # Calculate cosine similarity
+    similarity_scores = cosine_similarity(tfidf_matrix,user_vector)
+    similarity_scores = similarity_scores.sum(axis=0)
+    # Get the indices of the top 3 similar jobs
+    top_3_indices = pd.Series(similarity_scores).nlargest(3).index
+    
+    recommended_jobs = non_favorite_jobs.iloc[top_3_indices].to_dict(orient='records')
+    return recommended_jobs
+
 
 @app.route('/api/updateFavoriteStatus', methods=['POST'])
 def update_favorite_job():
