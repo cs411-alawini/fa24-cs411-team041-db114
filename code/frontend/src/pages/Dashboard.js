@@ -30,10 +30,9 @@ function Dashboard() {
     },
   ];
 
-  // Fetch all jobs
   const fetchJobs = async (filters = {}) => {
     try {
-      const userID = localStorage.getItem('user_id');  // Get user_id from localStorage
+      const userID = localStorage.getItem('user_id');
       if (!userID) {
         console.error('User is not logged in.');
         return;
@@ -45,7 +44,6 @@ function Dashboard() {
     }
   };
 
-  // Handle search
   const handleSearch = async () => {
     const filters = {
       jobTitle: search.jobTitle,
@@ -55,29 +53,26 @@ function Dashboard() {
     fetchJobs(filters);
   };
 
-  // Update job data
   const handleUpdateJob = async () => {
     try {
       const updatedJob = { ...jobToUpdate, ...newJobData };
       await api.updateJob(updatedJob);
       setOpenDialog(false);
-      fetchJobs(); // Refresh job list
+      fetchJobs();
     } catch (error) {
       console.error('Error updating job:', error);
     }
   };
 
-  // Delete job
   const handleDeleteJob = async (jobId) => {
     try {
       await api.deleteJob(jobId);
-      fetchJobs(); // Refresh job list after deletion
+      fetchJobs();
     } catch (error) {
       console.error('Error deleting job:', error);
     }
   };
 
-  // Toggle favorite status
   const handleToggleFavorite = async (jobId, isFavorite) => {
     try {
       const userID = localStorage.getItem('user_id');
@@ -89,7 +84,7 @@ function Dashboard() {
   };
 
   useEffect(() => {
-    fetchJobs(); // Fetch all jobs on component mount
+    fetchJobs();
   }, []);
 
   return (
@@ -119,7 +114,6 @@ function Dashboard() {
         ))}
       </Grid>
 
-      {/* Search Box */}
       <Box sx={{ mb: 4 }}>
         <TextField
           label="Job Title"
@@ -174,7 +168,7 @@ function Dashboard() {
                     <FormControlLabel
                       control={
                         <Checkbox
-                          checked={job.isFavorite || false} // Use the favorite status from the job
+                          checked={job.isFavorite || false}
                           onChange={() => handleToggleFavorite(job.JobID, job.isFavorite)}
                         />
                       }
@@ -197,7 +191,6 @@ function Dashboard() {
         </Grid>
       </Grid>
 
-      {/* Update Job Dialog */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
         <DialogTitle>Update Job</DialogTitle>
         <DialogContent>

@@ -43,7 +43,6 @@ function JobReview() {
         rating: newReview.rating
       });
       
-      // Clear form and refresh reviews
       setNewReview({ rating: 0, content: '' });
       fetchReviews();
     } catch (error) {
@@ -64,7 +63,6 @@ function JobReview() {
         </Box>
       )}
 
-      {/* Add Review Form */}
       <Card sx={{ mb: 4 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
@@ -98,7 +96,6 @@ function JobReview() {
         </CardContent>
       </Card>
 
-      {/* Reviews List */}
       <Typography variant="h6" gutterBottom>
         All Reviews ({reviews.length})
       </Typography>

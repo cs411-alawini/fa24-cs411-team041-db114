@@ -7,11 +7,10 @@ function FavoriteJobs() {
   const [recommendedJobs, setRecommendedJobs] = useState([]);
   const userID = localStorage.getItem('user_id');
 
-  // Fetch favorite jobs (assuming the API has a specific route for favorite jobs)
   const fetchFavoriteJobs = async () => {
     try {
-      const response = await api.getFavoriteJob(userID); // Pass userID
-      setFavoriteJobs(response.data); // Set the fetched jobs to the state
+      const response = await api.getFavoriteJob(userID);
+      setFavoriteJobs(response.data);
     } catch (error) {
       console.error('Error fetching favorite jobs:', error);
     }
@@ -28,14 +27,14 @@ function FavoriteJobs() {
   };
   const fetchRecommendedJobs = async () => {
     try {
-      const response = await api.getRecommendedJobs(userID); // API for recommended jobs
-      setRecommendedJobs(response.data); // Limit to 3 jobs
+      const response = await api.getRecommendedJobs(userID);
+      setRecommendedJobs(response.data);
     } catch (error) {
       console.error('Error fetching recommended jobs:', error);
     }
   };
   useEffect(() => {
-    fetchFavoriteJobs(); // Load favorite jobs when the component is mounted
+    fetchFavoriteJobs();
     fetchRecommendedJobs();
   }, []);
 

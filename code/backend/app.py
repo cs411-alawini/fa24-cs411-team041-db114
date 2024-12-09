@@ -22,7 +22,6 @@ def generate_job_id():
 app = Flask(__name__)
 CORS(app)
 
-# Temporary data storage (will be replaced with database later)
 jobs_data = [
     {"id": 1, "title": "Software Engineer", "company": "Google", "location": "Mountain View"},
     {"id": 2, "title": "Data Scientist", "company": "Amazon", "location": "Seattle"},
@@ -54,14 +53,14 @@ def get_jobs(user_id):
     if sponsored:
         query += f" AND J.Sponsored = :sponsored"
     
-    query += ' AND J.ApprovalStatus = TRUE LIMIT 50'  # Add the LIMIT at the end
+    query += ' AND J.ApprovalStatus = TRUE LIMIT 50'
 
     with engine.connect() as connection:
         result = connection.execute(text(query), {
-            "job_title": f"%{job_title}%",  # Use wildcard for partial matching
+            "job_title": f"%{job_title}%",
             "company_name": f"%{company_name}%",
             "sponsored": sponsored,
-            "user_id": user_id  # Pass the user_id for checking if the job is favorited
+            "user_id": user_id
         })
         jobs = [dict(row._mapping) for row in result]
         
@@ -82,7 +81,7 @@ def getFavoriteJob(user_id):
 
     with engine.connect() as connection:
         result = connection.execute(text(query), {
-            "user_id": user_id  # Pass the user_id for checking if the job is favorited
+            "user_id": user_id
         })
         jobs = [dict(row._mapping) for row in result]
         
@@ -93,7 +92,6 @@ def getFavoriteJob(user_id):
 def getRecommendeddJobs(user_id):
     engine = createEngine()
 
-    # Query to fetch the jobs the user has favorited (limit 50 jobs)
     query = """
         SELECT J.*, 
                CASE WHEN F.UserID IS NOT NULL THEN TRUE ELSE FALSE END AS isFavorite
@@ -107,11 +105,10 @@ def getRecommendeddJobs(user_id):
         jobs = [dict(row._mapping) for row in result]
     
     if not jobs:
-        return jsonify([])  # If no jobs are found for the user, return empty list
+        return jsonify([])
     
     job_data = pd.DataFrame(jobs)
 
-    # Get the job titles for the jobs the user has favorited (or relevant jobs)
     favorite_jobs = job_data[job_data['isFavorite'] == True]
     favorite_job_ids = favorite_jobs['JobID'].tolist()
     non_favorite_jobs = job_data[~job_data['JobID'].isin(favorite_job_ids)]
@@ -120,13 +117,10 @@ def getRecommendeddJobs(user_id):
     tfidf_vectorizer = TfidfVectorizer(stop_words='english')
     tfidf_matrix = tfidf_vectorizer.fit_transform(non_favorite_jobs['JobTitle'])
 
-    # Compute TF-IDF vector for the user-provided job title
     user_vector = tfidf_vectorizer.transform(favorite_jobs['JobTitle'])
 
-    # Calculate cosine similarity
     similarity_scores = cosine_similarity(tfidf_matrix,user_vector)
     similarity_scores = similarity_scores.sum(axis=0)
-    # Get the indices of the top 3 similar jobs
     top_3_indices = pd.Series(similarity_scores).nlargest(3).index
     
     recommended_jobs = non_favorite_jobs.iloc[top_3_indices].to_dict(orient='records')
@@ -257,7 +251,6 @@ def get_job_stats():
             # Call stored procedure for salary and location stats
             try:
                 print("Executing stored procedure...")
-                # Execute stored procedure and fetch all results
                 results = connection.execute(text("CALL GetSalaryAndLocationStats()"))
                 
                 # First result set: Salary data
@@ -312,9 +305,7 @@ def get_job_stats():
                 print(f"Error in stored procedure: {str(e)}")
                 print(f"Full error details: {e.__class__.__name__}")
 
-            # Create a new connection for the transaction
             with engine.connect() as connection:
-                # Start transaction for job type and rating stats
                 trans = connection.begin()
                 try:
                     # Job type distribution (Uses: SET Operation, GROUP BY)
@@ -376,7 +367,6 @@ def get_job_stats():
                         rating_data['datasets'][0]['data'].append(row.job_count)
                     result['ratingData'] = rating_data
 
-                    # Commit transaction
                     trans.commit()
                 except Exception as e:
                     trans.rollback()
@@ -387,7 +377,6 @@ def get_job_stats():
     except Exception as e:
         print(f"Error in get_job_stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
-
     
 
 @app.route('/api/login', methods=['POST'])
@@ -455,17 +444,6 @@ def register_user():
         connection.commit()
 
     return jsonify({"success": True, "message": "User registered successfully"}), 201
-
-
-
-# 下面这个我随便写的，是为了提醒，处'''当前登录'''用户的收藏
-# @app.route('/api/favorites', methods=['GET'])
-# def get_favorites():
-#     user_id = request.args.get('user_id') # 这里是从前端返回的当前用户的用户id
-
-#     query = text("""         
-#     """)
-#     return 0
 
 
 @app.route('/api/admin/pending-jobs', methods=['GET'])
